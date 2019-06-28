@@ -17,11 +17,9 @@ public class Link {
     public String getName() {
         return name;
     }
-
     public String getPath() {
         return path;
     }
-
     public String getType() {
         return type;
     }

@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.adriantache.githubexplorer.Link;
 import com.adriantache.githubexplorer.R;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 
 /**
@@ -26,8 +28,9 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
     }
 
     // Create new views (invoked by the layout manager)
+    @NotNull
     @Override
-    public FileAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public FileAdapter.ViewHolder onCreateViewHolder(@NotNull ViewGroup parent, int viewType) {
         // create a new view
         TextView v = (TextView) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.my_text_view, parent, false);
@@ -38,12 +41,16 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
     // Replace the contents of a view (invoked by the layout manager)
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NotNull ViewHolder holder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         Link element = dataset.get(position);
-        String text = element.getName() + (element.getType().equals("dir") ? " -> " : "");
+        boolean isDirectory = element.getType().equals("dir");
+        String text = element.getName() + (isDirectory ? " -> " : "");
         holder.textView.setText(text);
+        //add icons based on link type
+        holder.textView.setCompoundDrawablesWithIntrinsicBounds(isDirectory ? R.drawable.folder : R.drawable.file, 0, 0, 0);
+        holder.textView.setCompoundDrawablePadding(50);
     }
 
     // Return the size of your dataset (invoked by the layout manager)
@@ -61,10 +68,10 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
     // you provide access to all the views for a data item in a view holder
     public static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         // each data item is just a string in this case
-        public TextView textView;
+        TextView textView;
         OnRepoListener onRepoListener;
 
-        public ViewHolder(TextView v, OnRepoListener onRepoListener) {
+        ViewHolder(TextView v, OnRepoListener onRepoListener) {
             super(v);
             textView = v;
             this.onRepoListener = onRepoListener;

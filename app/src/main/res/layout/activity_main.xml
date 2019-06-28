@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
+        android:autofillHints="username"
         android:hint="username"
         android:inputType="text"
         android:selectAllOnFocus="true"
@@ -21,8 +22,7 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed"
-        android:autofillHints="username" />
+        app:layout_constraintVertical_chainStyle="packed" />
 
     <EditText
         android:id="@+id/password"
@@ -31,6 +31,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="32dp"
         android:layout_marginEnd="8dp"
+        android:autofillHints="password"
         android:hint="password (optional)"
         android:inputType="textPassword"
         android:selectAllOnFocus="true"
@@ -39,8 +40,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/username"
-        android:autofillHints="password" />
+        app:layout_constraintTop_toBottomOf="@+id/username" />
 
     <EditText
         android:id="@+id/twoFA"
@@ -50,6 +50,7 @@
         android:layout_marginTop="32dp"
         android:layout_marginEnd="8dp"
         android:hint="two-factor authentication"
+        android:importantForAutofill="no"
         android:inputType="number"
         android:selectAllOnFocus="true"
         android:singleLine="true"
@@ -58,8 +59,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/password"
-        android:importantForAutofill="no" />
+        app:layout_constraintTop_toBottomOf="@+id/password" />
 
     <Button
         android:id="@+id/login"
@@ -77,13 +77,14 @@
 
     <ImageView
         android:id="@+id/checkmark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:layout_marginStart="16dp"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="@+id/username"
         app:layout_constraintStart_toEndOf="@+id/username"
         app:layout_constraintTop_toTopOf="@+id/username"
-        app:srcCompat="@android:drawable/checkbox_on_background" />
+        app:srcCompat="@drawable/lock"
+        tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
