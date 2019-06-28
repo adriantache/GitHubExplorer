@@ -100,7 +100,6 @@ public class FileExplorer extends AppCompatActivity implements FileAdapter.OnRep
                 sortLinks(repos);
                 //only works if we mutate dataset; if we change dataset we need to create a new adapter
                 adapter.notifyDataSetChanged();
-                Log.i(TAG, "decodeJson: Fetched " + repos.size() + " files.");
             } else {
                 Toast.makeText(this, "No files returned from JSON!", Toast.LENGTH_SHORT).show();
             }
