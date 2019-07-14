@@ -54,14 +54,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         twoFA = findViewById(R.id.twoFA);
-        final EditText username = findViewById(R.id.username);
+        final EditText usernameText = findViewById(R.id.username);
         final EditText password = findViewById(R.id.password);
         final ImageView checkmark = findViewById(R.id.checkmark);
 
         //show checkmark if 2FA token is saved
-        username.addTextChangedListener(new TextWatcher() {
+        usernameText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                //not needed
             }
 
             @Override
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable editable) {
+                //not needed
             }
         });
 
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String user = username.getText().toString().toLowerCase();
+                String user = usernameText.getText().toString().toLowerCase();
                 String pass = password.getText().toString();
                 String twoFactorAuth = twoFA.getText().toString();
 
@@ -105,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //todo [FEATURE] add username detection if login via email address
     private void logIn(String user, String pass, String twoFA) {
         if (TextUtils.isEmpty(user)) {
             Toast.makeText(this, "No user specified!", Toast.LENGTH_SHORT).show();
@@ -114,12 +117,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Uri.Builder builder = new Uri.Builder();
+        builder.scheme("https");
 
         if (TextUtils.isEmpty(pass)) {
             Toast.makeText(this, "No password inserted, only showing public repos!", Toast.LENGTH_SHORT).show();
 
-            builder.scheme("https")
-                    .authority(GIT_HUB_API)
+            builder.authority(GIT_HUB_API)
                     .appendPath(USERS_ENDPOINT)
                     .appendPath(user)
                     .appendPath(REPOS_ENDPOINT);
@@ -130,8 +133,7 @@ public class MainActivity extends AppCompatActivity {
             String base = Base64.encodeToString((user + ":" + pass).getBytes(), Base64.NO_WRAP);
             authHeader = "Basic " + base;
 
-            builder.scheme("https")
-                    .authority(GIT_HUB_API)
+            builder.authority(GIT_HUB_API)
                     .appendPath(AUTHORIZATIONS_ENDPOINT);
 
             new NetworkWork().execute(builder.build().toString(), authHeader, twoFA);
@@ -143,8 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 authHeader = "token " + twoFactorToken;
             }
 
-            builder.scheme("https")
-                    .authority(GIT_HUB_API)
+            builder.authority(GIT_HUB_API)
                     .appendPath(USER_ENDPOINT)
                     .appendPath(REPOS_ENDPOINT);
 
@@ -154,58 +155,6 @@ public class MainActivity extends AppCompatActivity {
                 new NetworkWork().execute(builder.build().toString(), authHeader, twoFA);
             }
         }
-    }
-
-    private void decodeJson(String s) {
-        if (TextUtils.isEmpty(s))
-            Toast.makeText(MainActivity.this, "Empty response!", Toast.LENGTH_SHORT).show();
-
-        ArrayList<String> repos = new ArrayList<>();
-
-        try {
-            JSONArray jsonRoot = new JSONArray(s);
-            for (int i = 0; i < jsonRoot.length(); i++) {
-                JSONObject child = jsonRoot.optJSONObject(i);
-                String repoName = child.optString("name");
-                if (!TextUtils.isEmpty(repoName)) repos.add(repoName);
-            }
-
-            if (!repos.isEmpty()) {
-                Intent intent = new Intent(this, RepoList.class);
-                intent.putExtra("username", username);
-                intent.putExtra("authorization", authHeader);
-                intent.putStringArrayListExtra("repos", repos);
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Cannot extract repos from JSON!", Toast.LENGTH_SHORT).show();
-            }
-        } catch (JSONException e) {
-            Toast.makeText(this, "Cannot decode JSON!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void saveTwoFactorToken(String s) {
-        try {
-            JSONObject jsonRoot = new JSONObject(s);
-            String accessToken = jsonRoot.optString("token");
-
-            if (!TextUtils.isEmpty(accessToken)) {
-                SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
-                SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
-                sharedPreferencesEditor.putString(username, accessToken);
-                sharedPreferencesEditor.apply();
-
-                twoFactorToken = accessToken;
-
-                twoFactorRequested = false;
-            }
-
-        } catch (JSONException e) {
-            Toast.makeText(this, "Cannot decode 2FA JSON!", Toast.LENGTH_SHORT).show();
-        }
-
-        //proceed with fetching data
-        logIn(username, username, null);
     }
 
     class NetworkWork extends AsyncTask<String, Void, String> {
@@ -223,11 +172,12 @@ public class MainActivity extends AppCompatActivity {
                 builder.addHeader("x-github-otp", url[2]);
 
                 if (twoFactorRequested) {
-                    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+                    final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
                     HashMap<String, String> map = new HashMap<>();
                     map.put("note", "GitHubExplorer");
                     JSONObject json = new JSONObject(map);
+
                     RequestBody body = RequestBody.create(json.toString(), JSON);
                     builder.post(body);
                 }
@@ -254,25 +204,83 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String s) {
-            if (s.equals(ERROR_2FA)) {
-                Toast.makeText(MainActivity.this, "Two-factor authentication is active, please enter code.", Toast.LENGTH_SHORT).show();
-                twoFA.setVisibility(View.VISIBLE);
-
-                //todo refactor authorization fetching flow
-                twoFactorRequested = true;
-            } else if (s.equals(ERROR_RETRIES)) {
-                Toast.makeText(MainActivity.this, "Maximum number of login attempts exceeded. Please try again later.", Toast.LENGTH_SHORT).show();
-            } else if (s.equals(ERROR)) {
-                Toast.makeText(MainActivity.this, "Cannot fetch data from GitHub! Bad credentials?", Toast.LENGTH_SHORT).show();
-            } else if (TextUtils.isEmpty(s)) {
+            if (TextUtils.isEmpty(s))
                 Toast.makeText(MainActivity.this, "Empty response!", Toast.LENGTH_SHORT).show();
-            } else {
-                if (!twoFactorRequested) {
-                    decodeJson(s);
-                } else {
-                    saveTwoFactorToken(s);
-                }
+
+            switch (s) {
+                case ERROR_2FA:
+                    Toast.makeText(MainActivity.this, "Two-factor authentication is active, please enter code.", Toast.LENGTH_SHORT).show();
+                    twoFA.setVisibility(View.VISIBLE);
+
+                    //todo refactor authorization fetching flow
+                    twoFactorRequested = true;
+                    break;
+                case ERROR_RETRIES:
+                    Toast.makeText(MainActivity.this, "Maximum number of login attempts exceeded. Please try again later.", Toast.LENGTH_SHORT).show();
+                    break;
+                case ERROR:
+                    Toast.makeText(MainActivity.this, "Cannot fetch data from GitHub! Bad credentials?", Toast.LENGTH_SHORT).show();
+                    break;
+                default:
+                    if (twoFactorRequested) {
+                        saveTwoFactorToken(s);
+                    } else {
+                        decodeJson(s);
+                    }
+                    break;
             }
+        }
+
+        private void decodeJson(String s) {
+            if (TextUtils.isEmpty(s))
+                Toast.makeText(MainActivity.this, "Empty response!", Toast.LENGTH_SHORT).show();
+
+            ArrayList<String> repos = new ArrayList<>();
+
+            try {
+                JSONArray jsonRoot = new JSONArray(s);
+                for (int i = 0; i < jsonRoot.length(); i++) {
+                    JSONObject child = jsonRoot.optJSONObject(i);
+                    String repoName = child.optString("name");
+                    if (!TextUtils.isEmpty(repoName)) repos.add(repoName);
+                }
+
+                if (!repos.isEmpty()) {
+                    Intent intent = new Intent(MainActivity.this, RepoList.class);
+                    intent.putExtra("username", username);
+                    intent.putExtra("authorization", authHeader);
+                    intent.putStringArrayListExtra("repos", repos);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Cannot extract repos from JSON!", Toast.LENGTH_SHORT).show();
+                }
+            } catch (JSONException e) {
+                Toast.makeText(MainActivity.this, "Cannot decode JSON!", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        private void saveTwoFactorToken(String s) {
+            try {
+                JSONObject jsonRoot = new JSONObject(s);
+                String accessToken = jsonRoot.optString("token");
+
+                if (!TextUtils.isEmpty(accessToken)) {
+                    SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+                    SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
+                    sharedPreferencesEditor.putString(username, accessToken);
+                    sharedPreferencesEditor.apply();
+
+                    twoFactorToken = accessToken;
+
+                    twoFactorRequested = false;
+                }
+
+            } catch (JSONException e) {
+                Toast.makeText(MainActivity.this, "Cannot decode 2FA JSON!", Toast.LENGTH_SHORT).show();
+            }
+
+            //proceed with fetching data
+            logIn(username, username, null);
         }
     }
 
