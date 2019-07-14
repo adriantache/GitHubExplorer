@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String AUTHORIZATIONS_ENDPOINT = "authorizations";
     private static final String ERROR = "ERROR";
     private static final String ERROR_2FA = "ERROR_2FA";
+    private static final String ERROR_RETRIES = "ERROR_RETRIES";
     private static final String TAG = "MainActivity";
     private EditText twoFA;
     private String username;
@@ -238,6 +239,8 @@ public class MainActivity extends AppCompatActivity {
 
                 if (response.code() == 401 && responseString.contains("Must specify two-factor authentication OTP code.")) {
                     return ERROR_2FA;
+                } else if (response.code() == 403) {
+                    return ERROR_RETRIES;
                 } else if (!response.isSuccessful()) {
                     return ERROR;
                 }
@@ -255,7 +258,10 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Two-factor authentication is active, please enter code.", Toast.LENGTH_SHORT).show();
                 twoFA.setVisibility(View.VISIBLE);
 
+                //todo refactor authorization fetching flow
                 twoFactorRequested = true;
+            } else if (s.equals(ERROR_RETRIES)) {
+                Toast.makeText(MainActivity.this, "Maximum number of login attempts exceeded. Please try again later.", Toast.LENGTH_SHORT).show();
             } else if (s.equals(ERROR)) {
                 Toast.makeText(MainActivity.this, "Cannot fetch data from GitHub! Bad credentials?", Toast.LENGTH_SHORT).show();
             } else if (TextUtils.isEmpty(s)) {
